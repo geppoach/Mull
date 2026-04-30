@@ -1,0 +1,785 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MuLL — MY LEVEL UP LOG</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;700;800&family=DM+Sans:wght@300;400;500&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0e0f14;--sur:#16181f;--card:#1c1e28;--bdr:#2a2d3a;
+  --tech:#5b8af7;--lang:#f7875b;--oth:#52c98a;--acc:#7c6af9;
+  --txt:#e8eaf0;--mut:#6b7080;
+  --tech-d:rgba(91,138,247,.13);--lang-d:rgba(247,135,91,.13);--oth-d:rgba(82,201,138,.13);--acc-d:rgba(124,106,249,.15);
+}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--txt);min-height:100vh;font-size:14px}
+h1,h2,h3{font-family:'Syne',sans-serif}
+
+/* SETUP SCREEN */
+#setup-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px}
+.setup-card{background:var(--sur);border:1px solid var(--bdr);border-radius:16px;padding:32px;max-width:480px;width:100%}
+.setup-logo{font-family:'Syne',sans-serif;font-weight:800;font-size:18px;letter-spacing:.06em;margin-bottom:6px}
+.setup-logo em{color:var(--acc);font-style:normal}
+.setup-sub{font-size:12px;color:var(--mut);margin-bottom:24px;line-height:1.6}
+.setup-step{background:var(--card);border-radius:10px;padding:14px 16px;margin-bottom:12px;border:1px solid var(--bdr)}
+.setup-step-num{font-family:'Syne',sans-serif;font-weight:800;font-size:11px;color:var(--acc);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px}
+.setup-step p{font-size:12px;color:var(--mut);line-height:1.6;margin-bottom:8px}
+.setup-step a{color:var(--acc);text-decoration:none}
+.setup-step a:hover{text-decoration:underline}
+.code-block{background:var(--bg);border:1px solid var(--bdr);border-radius:6px;padding:8px 10px;font-family:monospace;font-size:11px;color:#a0c4ff;white-space:pre;overflow-x:auto;margin-top:6px}
+.setup-label{font-size:10px;color:var(--mut);text-transform:uppercase;letter-spacing:.07em;margin-bottom:4px;margin-top:10px}
+.setup-input{background:var(--card);border:1px solid var(--bdr);border-radius:8px;color:var(--txt);padding:8px 12px;font-family:'DM Sans',sans-serif;font-size:13px;outline:none;transition:border .15s;width:100%}
+.setup-input:focus{border-color:var(--acc)}
+.setup-btn{background:var(--acc);border:none;border-radius:8px;color:#fff;padding:10px 20px;font-family:'Syne',sans-serif;font-weight:700;font-size:13px;cursor:pointer;width:100%;margin-top:16px;transition:opacity .15s}
+.setup-btn:hover{opacity:.85}
+.setup-err{font-size:11px;color:#f06060;margin-top:8px;display:none}
+
+/* MAIN APP */
+#app{display:none}
+.nav{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid var(--bdr);position:sticky;top:0;background:var(--bg);z-index:100}
+.logo{font-family:'Syne',sans-serif;font-weight:800;font-size:14px;letter-spacing:.06em}
+.logo em{color:var(--acc);font-style:normal}
+.badge-mull{font-size:10px;background:var(--acc-d);color:var(--acc);border-radius:20px;padding:2px 8px;margin-left:8px;font-family:'Syne',sans-serif;font-weight:700}
+.sync-dot{width:7px;height:7px;border-radius:50%;background:var(--mut);display:inline-block;margin-right:5px;transition:background .3s}
+.sync-dot.ok{background:var(--oth)}.sync-dot.saving{background:var(--lang);animation:pulse .8s infinite}.sync-dot.err{background:#f06060}
+.sync-label{font-size:10px;color:var(--mut)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.tabs{display:flex;gap:3px;background:var(--sur);border-radius:8px;padding:3px}
+.tab{padding:6px 12px;border-radius:6px;border:none;background:none;color:var(--mut);cursor:pointer;font-family:'DM Sans',sans-serif;font-size:12px;transition:all .15s}
+.tab.on{background:var(--card);color:var(--txt);font-weight:500}
+.main{padding:18px 20px;max-width:860px;margin:0 auto}
+.page{display:none}.page.on{display:block}
+.srow{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}
+.sc{background:var(--sur);border:1px solid var(--bdr);border-radius:10px;padding:12px 14px}
+.sl{font-size:10px;color:var(--mut);text-transform:uppercase;letter-spacing:.08em;margin-bottom:5px}
+.sv{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;line-height:1}
+.ss{font-size:10px;color:var(--mut);margin-top:3px}
+.dot{display:inline-block;width:6px;height:6px;border-radius:50%;margin-right:4px}
+.dt{background:var(--tech)}.dl{background:var(--lang)}.do{background:var(--oth)}
+.crd{background:var(--sur);border:1px solid var(--bdr);border-radius:12px;padding:14px 18px;margin-bottom:14px}
+.ch{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.ct{font-family:'Syne',sans-serif;font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--mut)}
+.seg{display:flex;gap:3px;background:var(--card);border-radius:6px;padding:3px}
+.sb{padding:4px 9px;border-radius:4px;border:none;background:none;color:var(--mut);cursor:pointer;font-size:11px;font-family:'DM Sans',sans-serif;transition:all .15s}
+.sb.on{background:var(--sur);color:var(--txt)}
+.bchart{display:flex;align-items:flex-end;gap:5px;height:150px;padding-top:6px}
+.bg{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;min-width:0}
+.bs{width:100%;display:flex;flex-direction:column;gap:1px;border-radius:4px 4px 0 0;overflow:hidden;cursor:pointer;transition:opacity .15s}
+.bs:hover{opacity:.75}
+.bseg{width:100%}
+.blbl{font-size:9px;color:var(--mut);text-align:center;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:100%}
+.fg{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:8px;align-items:end;margin-bottom:12px}
+.fl{display:flex;flex-direction:column;gap:4px}
+.flabel{font-size:10px;color:var(--mut);text-transform:uppercase;letter-spacing:.06em}
+.fi,.fsel{background:var(--card);border:1px solid var(--bdr);border-radius:8px;color:var(--txt);padding:7px 10px;font-family:'DM Sans',sans-serif;font-size:13px;outline:none;transition:border .15s;width:100%}
+.fi:focus,.fsel:focus{border-color:var(--acc)}
+.fsel option{background:var(--card)}
+.btn-add{background:var(--acc);border:none;border-radius:8px;color:#fff;padding:8px 16px;font-family:'Syne',sans-serif;font-weight:700;font-size:12px;cursor:pointer;white-space:nowrap;transition:opacity .15s;height:36px}
+.btn-add:hover{opacity:.82}
+.fw{grid-column:1/-1}
+.tbl{width:100%;border-collapse:collapse}
+.tbl th{font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:var(--mut);padding:5px 8px;border-bottom:1px solid var(--bdr);text-align:left;font-weight:500}
+.tbl td{padding:7px 8px;border-bottom:1px solid rgba(255,255,255,.04);font-size:12px;vertical-align:middle}
+.tbl tr:hover td{background:rgba(255,255,255,.02)}
+.bdg{display:inline-flex;align-items:center;padding:2px 7px;border-radius:20px;font-size:10px;font-weight:500}
+.btech{background:var(--tech-d);color:var(--tech)}.blang{background:var(--lang-d);color:var(--lang)}.both{background:var(--oth-d);color:var(--oth)}
+.xbtn{background:none;border:none;color:var(--mut);cursor:pointer;padding:2px 5px;border-radius:4px;font-size:13px;transition:color .15s}
+.xbtn:hover{color:#f06060}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
+.mrow{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.04)}
+.mn{font-size:11px;color:var(--mut);width:32px;flex-shrink:0}
+.mbw{flex:1;background:var(--card);border-radius:3px;height:5px;overflow:hidden}
+.mb{height:100%;border-radius:3px}
+.mv{font-size:10px;color:var(--mut);width:44px;text-align:right;flex-shrink:0}
+.donut-w{display:flex;justify-content:center;align-items:center;gap:20px;padding:6px 0}
+.leg-w{display:flex;flex-direction:column;gap:7px}
+.li{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--mut)}
+.lsw{width:9px;height:9px;border-radius:2px}
+.ys{display:flex;align-items:center;gap:6px}
+.yb{background:none;border:1px solid var(--bdr);border-radius:5px;color:var(--mut);cursor:pointer;padding:3px 7px;font-size:11px;transition:all .15s}
+.yb:hover{color:var(--txt);border-color:var(--acc)}
+.yd{font-family:'Syne',sans-serif;font-weight:700;font-size:14px;min-width:44px;text-align:center}
+.cg{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-top:6px}
+.cdh{font-size:9px;color:var(--mut);text-align:center;padding:3px 0;text-transform:uppercase;letter-spacing:.05em}
+.cd{aspect-ratio:1;border-radius:5px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:background .15s;position:relative;font-size:10px}
+.cd.emp{background:none;cursor:default}
+.cd.tdy{outline:1px solid var(--acc);outline-offset:-1px}
+.cd.hd{background:rgba(124,106,249,.18);color:var(--txt)}
+.cd.nd{background:var(--card);color:var(--mut)}
+.cd:hover:not(.emp){background:rgba(124,106,249,.3)}
+.cdot{width:3px;height:3px;border-radius:50%;position:absolute;bottom:2px}
+.cnav{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.cnb{background:none;border:none;color:var(--mut);cursor:pointer;padding:3px 7px;font-size:15px;border-radius:4px;transition:color .15s}
+.cnb:hover{color:var(--txt)}
+.cml{font-family:'Syne',sans-serif;font-weight:700;font-size:13px}
+.hm{display:grid;grid-template-columns:repeat(26,1fr);gap:2px;margin-top:6px}
+.hc{aspect-ratio:1;border-radius:2px;background:var(--card)}
+.h1{background:rgba(124,106,249,.25)}.h2{background:rgba(124,106,249,.5)}.h3{background:rgba(124,106,249,.75)}.h4{background:var(--acc)}
+.ach-form{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:8px;align-items:end;margin-bottom:14px}
+.ach-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px;margin-top:8px}
+.ach-card{background:var(--card);border:1px solid var(--bdr);border-radius:10px;padding:12px 14px;position:relative;transition:border-color .2s}
+.ach-card:hover{border-color:var(--acc)}
+.ach-icon{font-size:20px;margin-bottom:6px}
+.ach-name{font-family:'Syne',sans-serif;font-weight:700;font-size:13px;margin-bottom:3px;padding-right:20px;line-height:1.3}
+.ach-date{font-size:11px;color:var(--mut)}
+.ach-cat{font-size:10px;padding:1px 6px;border-radius:10px;margin-top:4px;display:inline-block}
+.ach-note{font-size:11px;color:var(--mut);margin-top:4px;line-height:1.4}
+.ach-del{position:absolute;top:8px;right:8px;background:none;border:none;color:var(--mut);cursor:pointer;font-size:12px;transition:color .15s}
+.ach-del:hover{color:#f06060}
+.ach-filter{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:12px}
+.af{padding:4px 10px;border-radius:20px;border:1px solid var(--bdr);background:none;color:var(--mut);cursor:pointer;font-size:11px;transition:all .15s}
+.af.on{border-color:var(--acc);color:var(--acc);background:var(--acc-d)}
+.past-banner{background:linear-gradient(135deg,rgba(124,106,249,.15),rgba(247,135,91,.1));border:1px solid rgba(124,106,249,.3);border-radius:10px;padding:12px 16px;margin-bottom:14px;display:flex;align-items:center;gap:12px}
+.pb-text{font-size:12px;color:var(--mut);line-height:1.5}
+.pb-text strong{color:var(--txt);font-family:'Syne',sans-serif}
+.improw{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px}
+.gbtn{background:none;border:1px solid var(--bdr);border-radius:7px;color:var(--mut);padding:6px 12px;font-family:'DM Sans',sans-serif;font-size:11px;cursor:pointer;transition:all .15s}
+.gbtn:hover{border-color:var(--acc);color:var(--txt)}
+.loading-overlay{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:48px;color:var(--mut);gap:12px}
+.spinner{width:24px;height:24px;border:2px solid var(--bdr);border-top-color:var(--acc);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.toast{position:fixed;bottom:18px;right:18px;background:var(--acc);color:#fff;padding:9px 14px;border-radius:8px;font-size:12px;font-family:'Syne',sans-serif;font-weight:600;opacity:0;transition:opacity .3s;pointer-events:none;z-index:999}
+.toast.show{opacity:1}
+.empty{text-align:center;padding:28px;color:var(--mut);font-size:12px}
+@media(max-width:600px){
+  .srow{grid-template-columns:repeat(2,1fr)}
+  .fg{grid-template-columns:1fr 1fr}
+  .fg .btn-add{grid-column:1/-1}
+  .g2{grid-template-columns:1fr}
+  .nav{flex-direction:column;gap:10px;align-items:flex-start}
+  .ach-form{grid-template-columns:1fr 1fr}
+  .ach-form .btn-add{grid-column:1/-1}
+}
+</style>
+</head>
+<body>
+
+<!-- ===== SETUP SCREEN ===== -->
+<div id="setup-screen">
+  <div class="setup-card">
+    <div class="setup-logo">MY <em>LEVEL UP</em> LOG <span style="font-size:11px;background:var(--acc-d);color:var(--acc);border-radius:20px;padding:2px 8px;">MuLL</span></div>
+    <div class="setup-sub">初回のみ、Supabaseの接続情報を設定してください。<br>一度設定すれば次回から自動でログインします。</div>
+
+    <div class="setup-step">
+      <div class="setup-step-num">Step 1 — Supabaseプロジェクト作成</div>
+      <p><a href="https://supabase.com" target="_blank">supabase.com</a> で無料アカウントを作成し、新しいプロジェクトを作ります。</p>
+    </div>
+
+    <div class="setup-step">
+      <div class="setup-step-num">Step 2 — テーブル作成</div>
+      <p>Supabaseの <strong>SQL Editor</strong> で以下を実行してください：</p>
+      <div class="code-block">create table records (
+  id bigint primary key,
+  date text not null,
+  cat text not null,
+  mins integer not null,
+  note text default '',
+  created_at timestamptz default now()
+);
+
+create table achievements (
+  id bigint primary key,
+  date text not null,
+  cat text not null,
+  name text not null,
+  note text default '',
+  created_at timestamptz default now()
+);
+
+-- RLS（行レベルセキュリティ）を無効化（個人利用）
+alter table records disable row level security;
+alter table achievements disable row level security;</div>
+    </div>
+
+    <div class="setup-step">
+      <div class="setup-step-num">Step 3 — 接続情報を入力</div>
+      <p>Project Settings → API から取得できます。</p>
+      <div class="setup-label">Project URL</div>
+      <input type="text" class="setup-input" id="sb-url" placeholder="https://xxxxxxxxxx.supabase.co">
+      <div class="setup-label">anon public key</div>
+      <input type="text" class="setup-input" id="sb-key" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...">
+      <div class="setup-err" id="setup-err">接続に失敗しました。URLとKeyを確認してください。</div>
+      <button class="setup-btn" onclick="connectSupabase()">接続して始める →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MAIN APP ===== -->
+<div id="app">
+  <nav class="nav">
+    <div style="display:flex;align-items:center">
+      <div class="logo">MY <em>LEVEL UP</em> LOG<span class="badge-mull">MuLL</span></div>
+    </div>
+    <div style="display:flex;align-items:center;gap:16px">
+      <div style="display:flex;align-items:center">
+        <span class="sync-dot" id="sdot"></span>
+        <span class="sync-label" id="slbl">接続中...</span>
+      </div>
+      <div class="tabs">
+        <button class="tab on" onclick="go('log')">記録</button>
+        <button class="tab" onclick="go('ach')">資格・実績</button>
+        <button class="tab" onclick="go('ana')">分析</button>
+        <button class="tab" onclick="go('cal')">カレンダー</button>
+      </div>
+    </div>
+  </nav>
+
+  <div class="main">
+
+    <!-- LOG -->
+    <div class="page on" id="p-log">
+      <div class="loading-overlay" id="loading-log"><div class="spinner"></div><span>データを読み込んでいます...</span></div>
+      <div id="log-content" style="display:none">
+        <div class="past-banner">
+          <div style="font-size:20px">📚</div>
+          <div class="pb-text"><strong>過去の学習実績（〜FY2025）が反映済み</strong><br>語学 797時間が累積合計に加算されています。FY2026以降の記録をここに追加していきましょう。</div>
+        </div>
+        <div class="srow" id="s-log"></div>
+        <div class="crd">
+          <div class="ch"><span class="ct">月別推移（直近6ヶ月）</span>
+            <div class="seg">
+              <button class="sb on" onclick="cm('all',this)">合計</button>
+              <button class="sb" onclick="cm('tech',this)">技術</button>
+              <button class="sb" onclick="cm('lang',this)">語学</button>
+              <button class="sb" onclick="cm('other',this)">その他</button>
+            </div>
+          </div>
+          <div class="bchart" id="bc"></div>
+        </div>
+        <div class="crd">
+          <div class="ch"><span class="ct">新規記録</span></div>
+          <div class="fg">
+            <div class="fl"><label class="flabel">日付</label><input type="date" class="fi" id="inp-date"></div>
+            <div class="fl"><label class="flabel">カテゴリ</label>
+              <select class="fsel" id="inp-cat"><option value="lang">語学</option><option value="tech">技術</option><option value="other">その他</option></select>
+            </div>
+            <div class="fl"><label class="flabel">学習時間（分）</label><input type="number" class="fi" id="inp-mins" placeholder="60" min="0" max="1440"></div>
+            <button class="btn-add" onclick="addRec()">+ 追加</button>
+            <div class="fl fw"><label class="flabel">メモ（任意）</label><input type="text" class="fi" id="inp-note" placeholder="学習内容..."></div>
+          </div>
+          <div class="improw">
+            <span style="font-size:11px;color:var(--mut)">インポート:</span>
+            <button class="gbtn" onclick="loadExcel()">Excelデータを読み込む（FY2026 4月）</button>
+          </div>
+          <div id="ll"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ACHIEVEMENT -->
+    <div class="page" id="p-ach">
+      <div class="loading-overlay" id="loading-ach"><div class="spinner"></div><span>データを読み込んでいます...</span></div>
+      <div id="ach-content" style="display:none">
+        <div class="crd">
+          <div class="ch"><span class="ct">資格・実績を登録</span></div>
+          <div class="ach-form">
+            <div class="fl"><label class="flabel">取得日</label><input type="date" class="fi" id="ach-date"></div>
+            <div class="fl"><label class="flabel">種別</label>
+              <select class="fsel" id="ach-cat">
+                <option value="cert">資格・検定</option>
+                <option value="award">表彰・受賞</option>
+                <option value="skill">スキル習得</option>
+                <option value="other">その他</option>
+              </select>
+            </div>
+            <div class="fl fw" style="grid-column:1/3"><label class="flabel">資格名・実績名</label><input type="text" class="fi" id="ach-name" placeholder="例: TOEIC 800点、AWS認定資格..."></div>
+            <button class="btn-add" onclick="addAch()" style="align-self:end">+ 追加</button>
+            <div class="fl fw"><label class="flabel">備考（任意）</label><input type="text" class="fi" id="ach-note" placeholder="スコア、感想など..."></div>
+          </div>
+        </div>
+        <div class="crd">
+          <div class="ch"><span class="ct">取得済み実績</span></div>
+          <div class="ach-filter">
+            <button class="af on" onclick="setAF('all',this)">すべて</button>
+            <button class="af" onclick="setAF('cert',this)">資格・検定</button>
+            <button class="af" onclick="setAF('award',this)">表彰・受賞</button>
+            <button class="af" onclick="setAF('skill',this)">スキル習得</button>
+            <button class="af" onclick="setAF('other',this)">その他</button>
+          </div>
+          <div style="font-size:11px;color:var(--mut);margin-bottom:10px" id="ach-count"></div>
+          <div class="ach-grid" id="ag"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ANALYTICS -->
+    <div class="page" id="p-ana">
+      <div class="crd">
+        <div class="ch"><span class="ct">年度別サマリー</span>
+          <div class="ys"><button class="yb" onclick="cy(-1)">◀</button><span class="yd" id="yd">2026</span><button class="yb" onclick="cy(1)">▶</button></div>
+        </div>
+        <div class="srow" id="s-ana"></div>
+      </div>
+      <div class="g2">
+        <div class="crd" style="margin-bottom:0">
+          <div class="ch"><span class="ct">カテゴリ割合（全期間）</span></div>
+          <div class="donut-w">
+            <canvas id="dc" width="110" height="110"></canvas>
+            <div class="leg-w" id="dl"></div>
+          </div>
+        </div>
+        <div class="crd" style="margin-bottom:0">
+          <div class="ch"><span class="ct">月別平均（分/日）</span></div>
+          <div id="ma"></div>
+        </div>
+      </div>
+      <div class="crd">
+        <div class="ch"><span class="ct">全期間の年別記録</span></div>
+        <div id="ay"></div>
+      </div>
+    </div>
+
+    <!-- CALENDAR -->
+    <div class="page" id="p-cal">
+      <div class="crd">
+        <div class="cnav">
+          <button class="cnb" onclick="cn(-1)">&#8592;</button>
+          <span class="cml" id="cml"></span>
+          <button class="cnb" onclick="cn(1)">&#8594;</button>
+        </div>
+        <div class="cg" id="cal-hdr"></div>
+        <div class="cg" id="cal-days"></div>
+      </div>
+      <div class="crd" id="cal-detail" style="display:none">
+        <div class="ch"><span class="ct" id="cal-detail-title"></span></div>
+        <div id="cal-detail-body"></div>
+      </div>
+      <div class="crd">
+        <div class="ch"><span class="ct">連続学習ヒートマップ（直近26週）</span></div>
+        <div class="hm" id="hm"></div>
+        <div style="display:flex;gap:5px;align-items:center;margin-top:8px;font-size:10px;color:var(--mut)">
+          <span>少</span>
+          <div style="width:10px;height:10px;border-radius:2px;background:var(--card)"></div>
+          <div class="hc h1" style="width:10px;height:10px"></div>
+          <div class="hc h2" style="width:10px;height:10px"></div>
+          <div class="hc h3" style="width:10px;height:10px"></div>
+          <div class="hc h4" style="width:10px;height:10px"></div>
+          <span>多</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// =====================
+// CONFIG (Supabaseキーはlocalstorageに保存)
+// =====================
+const STORAGE_KEY = 'mull_supabase_config';
+const PAST_MINS = 47820; // 797h × 60
+
+const CC={tech:'#5b8af7',lang:'#f7875b',other:'#52c98a'};
+const CL={tech:'技術',lang:'語学',other:'その他'};
+const ACATL={cert:'資格・検定',award:'表彰・受賞',skill:'スキル習得',other:'その他'};
+const ACATCLR={cert:'#f7c35b',award:'#f7875b',skill:'#52c98a',other:'#8b9ab5'};
+const ACATD={cert:'rgba(247,195,91,.13)',award:'rgba(247,135,91,.13)',skill:'rgba(82,201,138,.13)',other:'rgba(139,154,181,.13)'};
+const ACATICON={cert:'🎓',award:'🏆',skill:'⚡',other:'📌'};
+const MN=['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+const WD=['日','月','火','水','木','金','土'];
+
+const DEFAULT_ACHS=[
+  {id:1001,date:'2016-01-01',cat:'cert',name:'基本情報技術者',note:''},
+  {id:1002,date:'2017-01-01',cat:'cert',name:'応用情報技術者',note:''},
+  {id:1003,date:'2020-01-01',cat:'cert',name:'IoTシステム技術検定 中級',note:''},
+  {id:1004,date:'2025-01-01',cat:'cert',name:'CEFR B1 High',note:'語学レベル認定'},
+  {id:1005,date:'2025-01-01',cat:'cert',name:'TOEIC 725点',note:''}
+];
+
+const EXCEL_DATA=[
+  {date:'2026-04-01',mins:43},{date:'2026-04-02',mins:10},{date:'2026-04-03',mins:40},
+  {date:'2026-04-12',mins:40},{date:'2026-04-14',mins:40},{date:'2026-04-22',mins:49},
+  {date:'2026-04-26',mins:76},{date:'2026-04-27',mins:88}
+];
+
+let sb = null;
+let recs = [], achs = [];
+let cMode='all', aYear=new Date().getFullYear(), calD=new Date(), achFilter='all';
+
+// =====================
+// SUPABASE CONNECT
+// =====================
+async function connectSupabase() {
+  const url = document.getElementById('sb-url').value.trim();
+  const key = document.getElementById('sb-key').value.trim();
+  const errEl = document.getElementById('setup-err');
+  errEl.style.display = 'none';
+  if (!url || !key) { errEl.textContent = 'URLとKeyを入力してください。'; errEl.style.display = 'block'; return; }
+  try {
+    const client = supabase.createClient(url, key);
+    const { error } = await client.from('records').select('id').limit(1);
+    if (error) throw error;
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({url, key}));
+    sb = client;
+    await initApp();
+  } catch(e) {
+    errEl.textContent = '接続に失敗しました。URLとKeyを確認してください。';
+    errEl.style.display = 'block';
+  }
+}
+
+async function initApp() {
+  document.getElementById('setup-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  setSyncStatus('loading');
+  await loadAll();
+}
+
+// =====================
+// DATA LOAD / SAVE
+// =====================
+async function loadAll() {
+  try {
+    const [rRes, aRes] = await Promise.all([
+      sb.from('records').select('*').order('date', {ascending: false}),
+      sb.from('achievements').select('*').order('date', {ascending: true})
+    ]);
+    recs = rRes.data || [];
+    achs = aRes.data || [];
+
+    // 初回：デフォルト資格を投入
+    if (achs.length === 0) {
+      const { data } = await sb.from('achievements').insert(DEFAULT_ACHS).select();
+      achs = data || DEFAULT_ACHS;
+    }
+
+    setSyncStatus('ok');
+    document.getElementById('loading-log').style.display = 'none';
+    document.getElementById('log-content').style.display = 'block';
+    document.getElementById('loading-ach').style.display = 'none';
+    document.getElementById('ach-content').style.display = 'block';
+    document.getElementById('inp-date').value = td();
+    document.getElementById('ach-date').value = td();
+    renderAll();
+  } catch(e) {
+    setSyncStatus('err');
+    toast('データの読み込みに失敗しました');
+  }
+}
+
+function setSyncStatus(s) {
+  const dot = document.getElementById('sdot'), lbl = document.getElementById('slbl');
+  if (s==='saving') { dot.className='sync-dot saving'; lbl.textContent='保存中...'; }
+  else if (s==='ok') { dot.className='sync-dot ok'; lbl.textContent='同期済み'; }
+  else if (s==='err') { dot.className='sync-dot err'; lbl.textContent='エラー'; }
+  else { dot.className='sync-dot'; lbl.textContent='接続中...'; }
+}
+
+// =====================
+// RECORDS CRUD
+// =====================
+async function addRec() {
+  const date = document.getElementById('inp-date').value;
+  const cat = document.getElementById('inp-cat').value;
+  const mins = parseInt(document.getElementById('inp-mins').value) || 0;
+  const note = document.getElementById('inp-note').value.trim();
+  if (!date || mins <= 0) { toast('日付と学習時間を入力してください'); return; }
+  setSyncStatus('saving');
+  const rec = { id: Date.now(), date, cat, mins, note };
+  const { error } = await sb.from('records').insert(rec);
+  if (error) { setSyncStatus('err'); toast('保存に失敗しました'); return; }
+  recs.unshift(rec);
+  document.getElementById('inp-mins').value = '';
+  document.getElementById('inp-note').value = '';
+  setSyncStatus('ok');
+  renderAll();
+  toast('記録しました！');
+}
+
+async function delRec(id) {
+  setSyncStatus('saving');
+  await sb.from('records').delete().eq('id', id);
+  recs = recs.filter(r => r.id !== id);
+  setSyncStatus('ok');
+  renderAll();
+}
+
+async function loadExcel() {
+  const existing = new Set(recs.map(r => r.date + '_lang'));
+  const toInsert = EXCEL_DATA
+    .filter(d => !existing.has(d.date + '_lang'))
+    .map(d => ({ id: Date.now() + Math.random() * 1000 | 0, date: d.date, cat: 'lang', mins: d.mins, note: '英語学習（Excelより）' }));
+  if (!toInsert.length) { toast('すでに読み込み済みです'); return; }
+  setSyncStatus('saving');
+  const { error } = await sb.from('records').insert(toInsert);
+  if (error) { setSyncStatus('err'); toast('インポートに失敗しました'); return; }
+  recs = [...toInsert, ...recs].sort((a,b) => b.date.localeCompare(a.date));
+  setSyncStatus('ok');
+  renderAll();
+  toast(`${toInsert.length}件のExcelデータを読み込みました`);
+}
+
+// =====================
+// ACHIEVEMENTS CRUD
+// =====================
+async function addAch() {
+  const date = document.getElementById('ach-date').value;
+  const cat = document.getElementById('ach-cat').value;
+  const name = document.getElementById('ach-name').value.trim();
+  const note = document.getElementById('ach-note').value.trim();
+  if (!date || !name) { toast('日付と名称を入力してください'); return; }
+  setSyncStatus('saving');
+  const ach = { id: Date.now(), date, cat, name, note };
+  const { error } = await sb.from('achievements').insert(ach);
+  if (error) { setSyncStatus('err'); toast('保存に失敗しました'); return; }
+  achs.push(ach);
+  achs.sort((a,b) => a.date.localeCompare(b.date));
+  document.getElementById('ach-name').value = '';
+  document.getElementById('ach-note').value = '';
+  setSyncStatus('ok');
+  renderAch();
+  toast('実績を追加しました！');
+}
+
+async function delAch(id) {
+  setSyncStatus('saving');
+  await sb.from('achievements').delete().eq('id', id);
+  achs = achs.filter(a => a.id !== id);
+  setSyncStatus('ok');
+  renderAch();
+}
+
+function setAF(f, el) { achFilter=f; document.querySelectorAll('.af').forEach(b=>b.classList.remove('on')); el.classList.add('on'); renderAch(); }
+
+// =====================
+// HELPERS
+// =====================
+function td() { const d=new Date(); return d.toISOString().split('T')[0]; }
+function fmt(m) { if(m<60) return m+'分'; const h=Math.floor(m/60),r=m%60; return r?h+'h'+r+'m':h+'h'; }
+function totalWithPast(cat) { return recs.filter(r=>r.cat===cat).reduce((s,r)=>s+r.mins,0) + (cat==='lang'?PAST_MINS:0); }
+function grandTotal() { return recs.reduce((s,r)=>s+r.mins,0)+PAST_MINS; }
+
+// =====================
+// RENDER
+// =====================
+function renderAll() { renderStats(); renderBar(); renderLog(); renderAch(); renderAna(); renderCal(); renderHM(); }
+
+function renderStats() {
+  const now=new Date();
+  const mk=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
+  const mr=recs.filter(r=>r.date.startsWith(mk));
+  const mT=mr.reduce((s,r)=>s+r.mins,0), mD=new Set(mr.map(r=>r.date)).size;
+  const gt=grandTotal(), lT=totalWithPast('lang'), tT=totalWithPast('tech'), oT=totalWithPast('other');
+  document.getElementById('s-log').innerHTML=`
+    <div class="sc"><div class="sl">総学習時間</div><div class="sv">${fmt(gt)}</div><div class="ss">過去実績含む</div></div>
+    <div class="sc"><div class="sl">今月</div><div class="sv">${fmt(mT)}</div><div class="ss">${mD}日間</div></div>
+    <div class="sc"><div class="sl">語学（累計）</div><div class="sv" style="color:var(--lang)">${fmt(lT)}</div><div class="ss">過去実績含む</div></div>
+    <div class="sc"><div class="sl">カテゴリ別</div><div style="display:flex;flex-direction:column;gap:3px;margin-top:5px">
+      <div style="font-size:11px"><span class="dot dt"></span>技術 ${fmt(tT)}</div>
+      <div style="font-size:11px"><span class="dot dl"></span>語学 ${fmt(lT)}</div>
+      <div style="font-size:11px"><span class="dot do"></span>その他 ${fmt(oT)}</div>
+    </div></div>`;
+}
+
+function renderBar() {
+  const now=new Date();
+  const months=[];
+  for(let i=5;i>=0;i--){const d=new Date(now.getFullYear(),now.getMonth()-i,1);months.push({y:d.getFullYear(),m:d.getMonth()+1,label:MN[d.getMonth()]});}
+  const maxV=Math.max(1,...months.map(({y,m})=>{
+    const k=y+'-'+String(m).padStart(2,'0');
+    const rs=recs.filter(r=>r.date.startsWith(k));
+    return cMode==='all'?rs.reduce((s,r)=>s+r.mins,0):rs.filter(r=>r.cat===cMode).reduce((s,r)=>s+r.mins,0);
+  }));
+  const H=130;
+  document.getElementById('bc').innerHTML=months.map(({y,m,label})=>{
+    const k=y+'-'+String(m).padStart(2,'0');
+    const rs=recs.filter(r=>r.date.startsWith(k));
+    const t={tech:0,lang:0,other:0};
+    rs.forEach(r=>{t[r.cat]=(t[r.cat]||0)+r.mins;});
+    const sc=v=>Math.round((v/maxV)*H);
+    if(cMode==='all'){
+      const oh=sc(t.other),lh=sc(t.lang),th=sc(t.tech);
+      return `<div class="bg"><div class="bs" title="${label}: ${fmt(t.tech+t.lang+t.other)}" style="height:${Math.max(oh+lh+th,1)}px">
+        <div class="bseg" style="height:${th}px;background:#5b8af7"></div>
+        <div class="bseg" style="height:${lh}px;background:#f7875b"></div>
+        <div class="bseg" style="height:${oh}px;background:#52c98a"></div>
+      </div><div class="blbl">${label}</div></div>`;
+    }
+    const cv=t[cMode]||0;
+    return `<div class="bg"><div class="bs" title="${label}: ${fmt(cv)}" style="height:${Math.max(sc(cv),1)}px">
+      <div class="bseg" style="height:${sc(cv)}px;background:${CC[cMode]}"></div>
+    </div><div class="blbl">${label}</div></div>`;
+  }).join('');
+}
+function cm(m,el){cMode=m;document.querySelectorAll('.sb').forEach(b=>b.classList.remove('on'));el.classList.add('on');renderBar();}
+
+function renderLog() {
+  const recent=recs.slice(0,25);
+  if(!recent.length){document.getElementById('ll').innerHTML='<div class="empty">まだ記録がありません。Excelデータを読み込むか、上のフォームから追加してください。</div>';return;}
+  let h=`<table class="tbl"><thead><tr><th>日付</th><th>カテゴリ</th><th>時間</th><th>メモ</th><th></th></tr></thead><tbody>`;
+  recent.forEach(r=>{
+    const bc={tech:'btech',lang:'blang',other:'both'}[r.cat];
+    h+=`<tr><td style="color:var(--mut);font-size:11px">${r.date}</td>
+      <td><span class="bdg ${bc}">${CL[r.cat]}</span></td>
+      <td style="font-family:'Syne',sans-serif;font-weight:700">${fmt(r.mins)}</td>
+      <td style="color:var(--mut);font-size:11px">${r.note||'—'}</td>
+      <td><button class="xbtn" onclick="delRec(${r.id})">✕</button></td></tr>`;
+  });
+  h+='</tbody></table>';
+  if(recs.length>25) h+=`<div style="text-align:center;padding:8px;font-size:11px;color:var(--mut)">他 ${recs.length-25} 件</div>`;
+  document.getElementById('ll').innerHTML=h;
+}
+
+function renderAch() {
+  const filtered=achFilter==='all'?achs:achs.filter(a=>a.cat===achFilter);
+  document.getElementById('ach-count').textContent=`${filtered.length}件の実績`;
+  if(!filtered.length){document.getElementById('ag').innerHTML='<div class="empty">実績がありません</div>';return;}
+  document.getElementById('ag').innerHTML=[...filtered].sort((a,b)=>a.date.localeCompare(b.date)).map(a=>`
+    <div class="ach-card">
+      <div class="ach-icon">${ACATICON[a.cat]}</div>
+      <div class="ach-name">${a.name}</div>
+      <div class="ach-date">${a.date.substring(0,4)}年</div>
+      <span class="ach-cat" style="background:${ACATD[a.cat]};color:${ACATCLR[a.cat]}">${ACATL[a.cat]}</span>
+      ${a.note?`<div class="ach-note">${a.note}</div>`:''}
+      <button class="ach-del" onclick="delAch(${a.id})">✕</button>
+    </div>`).join('');
+}
+
+function renderAna() {
+  document.getElementById('yd').textContent=aYear;
+  const yr=recs.filter(r=>r.date.startsWith(aYear));
+  const total=yr.reduce((s,r)=>s+r.mins,0);
+  const tech=yr.filter(r=>r.cat==='tech').reduce((s,r)=>s+r.mins,0);
+  const lang=yr.filter(r=>r.cat==='lang').reduce((s,r)=>s+r.mins,0);
+  const other=yr.filter(r=>r.cat==='other').reduce((s,r)=>s+r.mins,0);
+  const days=new Set(yr.map(r=>r.date)).size;
+  document.getElementById('s-ana').innerHTML=`
+    <div class="sc"><div class="sl">年間合計</div><div class="sv">${fmt(total)}</div><div class="ss">${days}日間</div></div>
+    <div class="sc"><div class="sl">月平均</div><div class="sv">${fmt(Math.round(total/12))}</div><div class="ss">月あたり</div></div>
+    <div class="sc"><div class="sl">1日平均</div><div class="sv">${fmt(days>0?Math.round(total/days):0)}</div><div class="ss">記録日のみ</div></div>
+    <div class="sc"><div class="sl">カテゴリ別</div><div style="display:flex;flex-direction:column;gap:3px;margin-top:5px">
+      <div style="font-size:11px"><span class="dot dt"></span>${fmt(tech)}</div>
+      <div style="font-size:11px"><span class="dot dl"></span>${fmt(lang)}</div>
+      <div style="font-size:11px"><span class="dot do"></span>${fmt(other)}</div>
+    </div></div>`;
+  const gL=totalWithPast('lang'),gT=totalWithPast('tech'),gO=totalWithPast('other');
+  const tot2=gL+gT+gO||1;
+  const c=document.getElementById('dc').getContext('2d');
+  c.clearRect(0,0,110,110);
+  let st=-Math.PI/2;
+  [gT,gL,gO].forEach((v,i)=>{
+    const sw=(v/tot2)*Math.PI*2;
+    c.beginPath();c.moveTo(55,55);c.arc(55,55,46,st,st+sw);c.closePath();
+    c.fillStyle=['#5b8af7','#f7875b','#52c98a'][i];c.fill();st+=sw;
+  });
+  c.beginPath();c.arc(55,55,26,0,Math.PI*2);c.fillStyle='#0e0f14';c.fill();
+  document.getElementById('dl').innerHTML=['技術','語学','その他'].map((l,i)=>`<div class="li"><div class="lsw" style="background:${['#5b8af7','#f7875b','#52c98a'][i]}"></div>${l}: ${fmt([gT,gL,gO][i])} (${Math.round([gT,gL,gO][i]/tot2*100)}%)</div>`).join('');
+  const maxA=Math.max(1,...MN.map((_,i)=>{
+    const k=aYear+'-'+String(i+1).padStart(2,'0');
+    const rs=yr.filter(r=>r.date.startsWith(k));
+    const d=new Set(rs.map(r=>r.date)).size;
+    return d>0?Math.round(rs.reduce((s,r)=>s+r.mins,0)/d):0;
+  }));
+  document.getElementById('ma').innerHTML=MN.map((_,i)=>{
+    const k=aYear+'-'+String(i+1).padStart(2,'0');
+    const rs=yr.filter(r=>r.date.startsWith(k));
+    const d=new Set(rs.map(r=>r.date)).size;
+    const a=d>0?Math.round(rs.reduce((s,r)=>s+r.mins,0)/d):0;
+    return `<div class="mrow"><span class="mn">${MN[i]}</span>
+      <div class="mbw"><div class="mb" style="width:${Math.round(a/maxA*100)}%;background:var(--acc)"></div></div>
+      <span class="mv">${a>0?a+'分':'—'}</span></div>`;
+  }).join('');
+  const years=[...new Set(recs.map(r=>r.date.substring(0,4)))].sort().reverse();
+  let h=`<table class="tbl"><thead><tr><th>年</th><th>合計</th><th>技術</th><th>語学</th><th>その他</th><th>日数</th><th>日平均</th></tr></thead><tbody>`;
+  h+=`<tr style="opacity:.6"><td style="font-family:'Syne',sans-serif;font-weight:700;font-size:11px">〜FY2025</td><td>${fmt(PAST_MINS)}</td><td style="color:#5b8af7">—</td><td style="color:#f7875b">${fmt(PAST_MINS)}</td><td style="color:#52c98a">—</td><td>—</td><td>—</td></tr>`;
+  years.forEach(y=>{
+    const rs=recs.filter(r=>r.date.startsWith(y));
+    const tot=rs.reduce((s,r)=>s+r.mins,0);
+    const tc=rs.filter(r=>r.cat==='tech').reduce((s,r)=>s+r.mins,0);
+    const lc=rs.filter(r=>r.cat==='lang').reduce((s,r)=>s+r.mins,0);
+    const oc=rs.filter(r=>r.cat==='other').reduce((s,r)=>s+r.mins,0);
+    const dd=new Set(rs.map(r=>r.date)).size;
+    h+=`<tr><td style="font-family:'Syne',sans-serif;font-weight:700">${y}</td><td>${fmt(tot)}</td><td style="color:#5b8af7">${fmt(tc)}</td><td style="color:#f7875b">${fmt(lc)}</td><td style="color:#52c98a">${fmt(oc)}</td><td>${dd}日</td><td>${fmt(dd>0?Math.round(tot/dd):0)}</td></tr>`;
+  });
+  if(!years.length) h+=`<tr><td colspan="7" style="text-align:center;color:var(--mut);padding:12px;font-size:11px">FY2026以降の記録はまだありません</td></tr>`;
+  h+='</tbody></table>';
+  document.getElementById('ay').innerHTML=h;
+}
+function cy(d){aYear+=d;renderAna();}
+
+function renderCal() {
+  const y=calD.getFullYear(),m=calD.getMonth();
+  document.getElementById('cml').textContent=y+'年'+MN[m];
+  document.getElementById('cal-hdr').innerHTML=WD.map(w=>`<div class="cdh">${w}</div>`).join('');
+  const first=new Date(y,m,1).getDay(),dim=new Date(y,m+1,0).getDate(),today=td();
+  const dm={};recs.forEach(r=>{if(!dm[r.date])dm[r.date]=[];dm[r.date].push(r);});
+  let h='';
+  for(let i=0;i<first;i++) h+=`<div class="cd emp"></div>`;
+  for(let d=1;d<=dim;d++){
+    const ds=y+'-'+String(m+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+    const rs=dm[ds]||[];
+    const cats=[...new Set(rs.map(r=>r.cat))];
+    h+=`<div class="${['cd',ds===today?'tdy':'',rs.length?'hd':'nd'].filter(Boolean).join(' ')}" onclick="selDay('${ds}')">${d}${cats.map((c,i)=>`<div class="cdot" style="background:${CC[c]};left:${i*6+3}px"></div>`).join('')}</div>`;
+  }
+  document.getElementById('cal-days').innerHTML=h;
+}
+function selDay(ds) {
+  const rs=recs.filter(r=>r.date===ds);
+  const el=document.getElementById('cal-detail');
+  document.getElementById('cal-detail-title').textContent=ds+' の記録';
+  if(!rs.length){el.style.display='none';return;}
+  el.style.display='block';
+  let h=rs.map(r=>{
+    const bc={tech:'btech',lang:'blang',other:'both'}[r.cat];
+    return `<div style="display:flex;align-items:center;gap:10px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.04)">
+      <span class="bdg ${bc}">${CL[r.cat]}</span>
+      <span style="font-family:'Syne',sans-serif;font-weight:700">${fmt(r.mins)}</span>
+      <span style="font-size:11px;color:var(--mut)">${r.note||''}</span>
+    </div>`;
+  }).join('');
+  h+=`<div style="padding:7px 0;font-size:12px;color:var(--mut)">合計: <strong style="color:var(--txt)">${fmt(rs.reduce((s,r)=>s+r.mins,0))}</strong></div>`;
+  document.getElementById('cal-detail-body').innerHTML=h;
+}
+function cn(d){calD=new Date(calD.getFullYear(),calD.getMonth()+d,1);renderCal();}
+
+function renderHM() {
+  const today=new Date();
+  const cells=[];
+  for(let i=181;i>=0;i--){const d=new Date(today);d.setDate(d.getDate()-i);cells.push(d.toISOString().split('T')[0]);}
+  const dm={};recs.forEach(r=>{dm[r.date]=(dm[r.date]||0)+r.mins;});
+  const maxM=Math.max(1,...Object.values(dm));
+  document.getElementById('hm').innerHTML=cells.slice(-182).map(ds=>{
+    const mv=dm[ds]||0;
+    const l=mv===0?0:mv<maxM*.25?1:mv<maxM*.5?2:mv<maxM*.75?3:4;
+    return `<div class="hc h${l}" title="${ds}: ${fmt(mv)}"></div>`;
+  }).join('');
+}
+
+function go(id) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('on'));
+  document.getElementById('p-'+id).classList.add('on');
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));
+  ['log','ach','ana','cal'].forEach((t,i)=>{if(t===id)document.querySelectorAll('.tab')[i].classList.add('on');});
+  if(id==='ana') renderAna();
+  if(id==='cal') { renderCal(); renderHM(); }
+  if(id==='ach') renderAch();
+}
+
+function toast(msg) {
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2200);
+}
+
+// =====================
+// AUTO-CONNECT (2回目以降)
+// =====================
+(async function() {
+  const saved = localStorage.getItem(STORAGE_KEY);
+  if (saved) {
+    try {
+      const {url, key} = JSON.parse(saved);
+      sb = supabase.createClient(url, key);
+      await initApp();
+    } catch(e) {
+      localStorage.removeItem(STORAGE_KEY);
+    }
+  }
+})();
+</script>
+</body>
+</html>

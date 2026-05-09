@@ -629,14 +629,16 @@ function renderAna(){
   const maxA=Math.max(1,...MN.map((_,i)=>{
     const k=aYear+'-'+String(i+1).padStart(2,'0');
     const rs=yr.filter(r=>r.date.startsWith(k));
-    const d=new Set(rs.map(r=>r.date)).size;
-    return d>0?Math.round(rs.reduce((s,r)=>s+r.mins,0)/d):0;
+    const daysInMonth=new Date(aYear,i+1,0).getDate();
+    const total=rs.reduce((s,r)=>s+r.mins,0);
+    return total>0?Math.round(total/daysInMonth):0;
   }));
   document.getElementById('ma').innerHTML=MN.map((_,i)=>{
     const k=aYear+'-'+String(i+1).padStart(2,'0');
     const rs=yr.filter(r=>r.date.startsWith(k));
-    const d=new Set(rs.map(r=>r.date)).size;
-    const a=d>0?Math.round(rs.reduce((s,r)=>s+r.mins,0)/d):0;
+    const daysInMonth=new Date(aYear,i+1,0).getDate();
+    const total=rs.reduce((s,r)=>s+r.mins,0);
+    const a=total>0?Math.round(total/daysInMonth):0;
     return `<div class="mrow"><span class="mn">${MN[i]}</span>
       <div class="mbw"><div class="mb" style="width:${Math.round(a/maxA*100)}%;background:var(--acc)"></div></div>
       <span class="mv">${a>0?a+'分':'—'}</span></div>`;

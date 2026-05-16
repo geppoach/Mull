@@ -514,21 +514,25 @@ function getLvInfo(cat){
   if(cat==='lang') mins=totalWithPast('lang');
   else if(cat==='tech') mins=totalWithPast('tech');
   else if(cat==='other') mins=totalWithPast('other');
-  else mins=grandTotal(); // total
+  else mins=grandTotal();
 
+  // 資格ボーナス：取得した「資格・検定」1件につき+100h(6000分)
+  const bonusMins=achs.filter(a=>a.cat==='cert').length*6000;
+  const totalMins=mins+bonusMins;
+
+  const lv=Math.min(calcLvFromMins(totalMins), LV_THRESHOLDS.length);
   const baseLv=calcLvFromMins(mins);
-  const bonus=achs.filter(a=>a.cat==='cert').length;
-  const lv=Math.min(baseLv+bonus, LV_THRESHOLDS.length);
 
-  // 次のレベルまでの情報（ベースレベルで計算）
-  const nextThresh=LV_THRESHOLDS[baseLv]||null; // null = max
-  const prevThresh=LV_THRESHOLDS[baseLv-1]||0;
+  // 次のレベルまでの情報（ボーナス込みで計算）
+  const nextThresh=LV_THRESHOLDS[lv-1]||null;
+  const prevThresh=LV_THRESHOLDS[lv-2]||0;
   const progress=nextThresh!=null
-    ? Math.min(100,Math.round((mins-prevThresh)/(nextThresh-prevThresh)*100))
+    ? Math.min(100,Math.round((totalMins-prevThresh)/(nextThresh-prevThresh)*100))
     : 100;
-  const remaining=nextThresh!=null?Math.max(0,nextThresh-mins):0;
+  const remaining=nextThresh!=null?Math.max(0,nextThresh-totalMins):0;
+  const bonus=achs.filter(a=>a.cat==='cert').length;
 
-  return{lv,baseLv,bonus,mins,nextThresh,prevThresh,progress,remaining};
+  return{lv,baseLv,bonus,bonusMins,mins,totalMins,nextThresh,prevThresh,progress,remaining};
 }
 
 // 総合レベル = カテゴリ別レベルの合計
@@ -606,10 +610,8 @@ function renderLevel(){
     const info=getLvInfo(key);
     const bar=`<div class="lv-bar-wrap"><div class="lv-bar" style="width:${info.progress}%;background:${color}"></div></div>`;
     const nextInfo=info.nextThresh!=null
-      ? `あと ${fmt(info.remaining)} で Lv${info.baseLv+1}`
+      ? `あと ${fmt(info.remaining)} で Lv${info.lv+1}`
       : 'MAX LEVEL';
-    const bonusHtml=info.bonus>0
-      ? `<div class="lv-bonus-badge">🎓 資格ボーナス +${info.bonus}Lv</div>`:'';
     return `<div class="lv-card cat-${key}">
       <div class="lv-header">
         <div>
@@ -620,10 +622,11 @@ function renderLevel(){
       </div>
       ${bar}
       <div class="lv-info">
-        <span>${fmt(info.mins)} 学習済み</span>
+        <span>${fmt(info.totalMins)} 換算済み</span>
         <span>${nextInfo}</span>
       </div>
-      ${bonusHtml}
+      ${info.bonus>0
+        ? `<div class="lv-bonus-badge">🎓 資格ボーナス +${info.bonus*100}h 加算済み</div>`:''}
     </div>`;
   }).join('');
 

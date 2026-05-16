@@ -185,6 +185,50 @@ h1,h2,h3{font-family:'Syne',sans-serif}
   .srow{grid-template-columns:1fr 1fr}
   .ach-grid{grid-template-columns:1fr}
 }
+
+/* ===== LEVEL SYSTEM ===== */
+.lv-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:14px}
+.lv-card{background:#fff;border:1.5px solid var(--bdr);border-radius:16px;padding:16px 18px;box-shadow:var(--shadow-sm);position:relative;overflow:hidden}
+.lv-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.lv-card.cat-tech::before{background:var(--tech)}
+.lv-card.cat-lang::before{background:var(--lang)}
+.lv-card.cat-other::before{background:var(--oth)}
+.lv-card.cat-total::before{background:var(--acc)}
+.lv-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.lv-cat{font-size:10px;color:var(--mut);text-transform:uppercase;letter-spacing:.08em;font-weight:600}
+.lv-badge{font-family:'Syne',sans-serif;font-weight:800;font-size:22px;line-height:1}
+.lv-badge .lv-num{font-size:32px}
+.lv-title{font-size:11px;color:var(--mut);margin-bottom:8px;font-weight:500}
+.lv-bar-wrap{background:var(--card);border-radius:6px;height:8px;overflow:hidden;border:1px solid var(--bdr);margin-bottom:6px}
+.lv-bar{height:100%;border-radius:6px;transition:width .6s cubic-bezier(.34,1.56,.64,1)}
+.lv-info{display:flex;justify-content:space-between;font-size:10px;color:var(--mut)}
+.lv-bonus-badge{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:600;padding:2px 7px;border-radius:20px;background:rgba(255,193,7,.15);color:#b8860b;margin-top:6px}
+
+.lv-total-card{background:linear-gradient(135deg,rgba(108,83,245,.08),rgba(59,110,245,.06));border:1.5px solid rgba(108,83,245,.25);border-radius:16px;padding:16px 18px;margin-bottom:14px;box-shadow:var(--shadow-sm)}
+.lv-total-inner{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.lv-total-num{font-family:'Syne',sans-serif;font-weight:800;font-size:48px;line-height:1;color:var(--acc)}
+.lv-total-label{font-size:11px;color:var(--mut);font-weight:500}
+.lv-total-title{font-family:'Syne',sans-serif;font-weight:700;font-size:16px;color:var(--txt)}
+
+.lv-history{margin-top:10px}
+.lv-hist-row{display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--bdr);font-size:12px}
+.lv-hist-row:last-child{border-bottom:none}
+.lv-hist-icon{font-size:14px;width:20px;text-align:center;flex-shrink:0}
+.lv-hist-text{flex:1;color:var(--txt)}
+.lv-hist-date{font-size:11px;color:var(--mut);flex-shrink:0}
+.lv-up-flash{animation:lvup .6s ease-out}
+@keyframes lvup{0%{transform:scale(1.2);color:var(--acc)}100%{transform:scale(1)}}
+
+.lv-table{width:100%;border-collapse:collapse;margin-top:8px}
+.lv-table th{font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:var(--mut);padding:5px 8px;border-bottom:1.5px solid var(--bdr);text-align:left;font-weight:600}
+.lv-table td{padding:6px 8px;border-bottom:1px solid var(--bdr);font-size:12px;vertical-align:middle}
+.lv-table tr:last-child td{border-bottom:none}
+.lv-table tr.current-lv td{background:var(--acc-d);font-weight:600}
+
+@media(max-width:640px){
+  .lv-grid{grid-template-columns:1fr}
+  .lv-total-num{font-size:36px}
+}
 </style>
 </head>
 <body>
@@ -239,6 +283,7 @@ alter table achievements disable row level security;</div>
       <div class="tabs">
         <button class="tab on" onclick="go('log')">記録</button>
         <button class="tab" onclick="go('ach')">資格</button>
+        <button class="tab" onclick="go('lv')">レベル</button>
         <button class="tab" onclick="go('ana')">分析</button>
         <button class="tab" onclick="go('cal')">カレンダー</button>
       </div>
@@ -317,6 +362,32 @@ alter table achievements disable row level security;</div>
           </div>
           <div style="font-size:11px;color:var(--mut);margin-bottom:10px" id="ach-count"></div>
           <div class="ach-grid" id="ag"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="page" id="p-lv">
+      <div class="lv-total-card">
+        <div class="lv-total-inner">
+          <div>
+            <div style="font-size:11px;color:var(--mut);font-weight:600;text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px">TOTAL LEVEL</div>
+            <div class="lv-total-num" id="lv-total-num">—</div>
+          </div>
+          <div style="flex:1;min-width:160px">
+            <div class="lv-total-title" id="lv-total-title">—</div>
+            <div style="font-size:11px;color:var(--mut);margin-top:4px" id="lv-total-sub"></div>
+          </div>
+        </div>
+      </div>
+      <div class="lv-grid" id="lv-grid"></div>
+      <div class="crd">
+        <div class="ch"><span class="ct">レベルアップ履歴</span></div>
+        <div id="lv-history"></div>
+      </div>
+      <div class="crd">
+        <div class="ch"><span class="ct">レベルテーブル</span></div>
+        <div style="overflow-x:auto">
+          <table class="lv-table" id="lv-table"></table>
         </div>
       </div>
     </div>
@@ -404,6 +475,187 @@ const EXCEL_DATA=[
   {date:'2026-04-12',mins:40},{date:'2026-04-14',mins:40},{date:'2026-04-22',mins:49},
   {date:'2026-04-26',mins:76},{date:'2026-04-27',mins:88}
 ];
+
+// =====================
+// LEVEL SYSTEM
+// =====================
+// 累計必要分: Lv1=0, Lv2=600(10h), Lv3=1500(25h), Lv4=2700(45h)...
+// 差分: 10h, 15h, 20h, 25h, 30h, 35h, 40h, 45h, 50h ...
+const LV_THRESHOLDS=(()=>{
+  const t=[0];let cum=0;
+  for(let i=1;i<=30;i++){cum+=(9+i)*60;t.push(cum);}
+  return t;
+})();
+
+const LV_TITLES=[
+  '','見習い冒険者','駆け出し冒険者','一人前の冒険者','熟練の冒険者','上級冒険者',
+  'エキスパート','マスター','グランドマスター','レジェンド','マイソロジー',
+  '神話の域','覚醒者','超越者','伝説の賢者','不滅の探求者'
+];
+
+// 学習時間(分)からレベルを計算（資格ボーナスは別加算）
+function calcLvFromMins(mins){
+  let lv=1;
+  for(let i=1;i<LV_THRESHOLDS.length;i++){
+    if(mins>=LV_THRESHOLDS[i]) lv=i+1; else break;
+  }
+  return lv;
+}
+
+// カテゴリ別の資格ボーナスレベルを計算
+// cat='cert'の資格のみボーナス対象。カテゴリ指定なし(total)は全資格を対象
+function certBonus(cat){
+  return achs.filter(a=>a.cat==='cert').length;
+}
+
+// カテゴリ別レベル情報を返す
+function getLvInfo(cat){
+  let mins=0;
+  if(cat==='lang') mins=totalWithPast('lang');
+  else if(cat==='tech') mins=totalWithPast('tech');
+  else if(cat==='other') mins=totalWithPast('other');
+  else mins=grandTotal(); // total
+
+  const baseLv=calcLvFromMins(mins);
+  const bonus=achs.filter(a=>a.cat==='cert').length;
+  const lv=Math.min(baseLv+bonus, LV_THRESHOLDS.length);
+
+  // 次のレベルまでの情報（ベースレベルで計算）
+  const nextThresh=LV_THRESHOLDS[baseLv]||null; // null = max
+  const prevThresh=LV_THRESHOLDS[baseLv-1]||0;
+  const progress=nextThresh!=null
+    ? Math.min(100,Math.round((mins-prevThresh)/(nextThresh-prevThresh)*100))
+    : 100;
+  const remaining=nextThresh!=null?Math.max(0,nextThresh-mins):0;
+
+  return{lv,baseLv,bonus,mins,nextThresh,prevThresh,progress,remaining};
+}
+
+// 総合レベル = カテゴリ別レベルの合計
+function getTotalLv(){
+  const tech=getLvInfo('tech');
+  const lang=getLvInfo('lang');
+  const other=getLvInfo('other');
+  return tech.lv+lang.lv+other.lv;
+}
+
+function lvTitle(lv){
+  return LV_TITLES[Math.min(lv,LV_TITLES.length-1)]||'超絶伝説';
+}
+
+// レベルアップ履歴を生成（時系列で何時間到達したか）
+function buildLvHistory(){
+  const events=[];
+  const cats=['tech','lang','other'];
+  const catLabel={tech:'技術',lang:'語学',other:'その他'};
+  const catColor={tech:'#3b6ef5',lang:'#e8622a',other:'#1ea868'};
+
+  cats.forEach(cat=>{
+    // 時系列で累計分を追跡
+    const catRecs=recs.filter(r=>r.cat===cat).sort((a,b)=>a.date.localeCompare(b.date));
+    let cumMins=cat==='lang'?PAST_MINS:0;
+    let prevLv=calcLvFromMins(cumMins);
+
+    catRecs.forEach(r=>{
+      cumMins+=r.mins;
+      const newLv=calcLvFromMins(cumMins);
+      if(newLv>prevLv){
+        for(let l=prevLv+1;l<=newLv;l++){
+          events.push({
+            date:r.date,
+            text:`${catLabel[cat]} Lv${l} 達成！`,
+            icon:'⬆️',
+            color:catColor[cat],
+            type:'study',
+            lv:l
+          });
+        }
+        prevLv=newLv;
+      }
+    });
+  });
+
+  // 資格ボーナスイベント
+  achs.filter(a=>a.cat==='cert').forEach(a=>{
+    events.push({
+      date:a.date,
+      text:`「${a.name}」取得 → ボーナス +1Lv`,
+      icon:'🎓',
+      color:'#c07a00',
+      type:'cert'
+    });
+  });
+
+  return events.sort((a,b)=>b.date.localeCompare(a.date)).slice(0,20);
+}
+
+function renderLevel(){
+  // 総合レベル
+  const totalLv=getTotalLv();
+  document.getElementById('lv-total-num').textContent=totalLv;
+  document.getElementById('lv-total-title').textContent=lvTitle(Math.floor(totalLv/3));
+  document.getElementById('lv-total-sub').textContent=`技術・語学・その他の各レベルの合計`;
+
+  // カテゴリ別カード
+  const cats=[
+    {key:'tech',label:'技術',color:'#3b6ef5',emoji:'💻'},
+    {key:'lang',label:'語学',color:'#e8622a',emoji:'📖'},
+    {key:'other',label:'その他',color:'#1ea868',emoji:'🌱'}
+  ];
+  document.getElementById('lv-grid').innerHTML=cats.map(({key,label,color,emoji})=>{
+    const info=getLvInfo(key);
+    const bar=`<div class="lv-bar-wrap"><div class="lv-bar" style="width:${info.progress}%;background:${color}"></div></div>`;
+    const nextInfo=info.nextThresh!=null
+      ? `あと ${fmt(info.remaining)} で Lv${info.baseLv+1}`
+      : 'MAX LEVEL';
+    const bonusHtml=info.bonus>0
+      ? `<div class="lv-bonus-badge">🎓 資格ボーナス +${info.bonus}Lv</div>`:'';
+    return `<div class="lv-card cat-${key}">
+      <div class="lv-header">
+        <div>
+          <div class="lv-cat">${emoji} ${label}</div>
+          <div class="lv-title">${lvTitle(info.lv)}</div>
+        </div>
+        <div class="lv-badge" style="color:${color}">Lv<span class="lv-num">${info.lv}</span></div>
+      </div>
+      ${bar}
+      <div class="lv-info">
+        <span>${fmt(info.mins)} 学習済み</span>
+        <span>${nextInfo}</span>
+      </div>
+      ${bonusHtml}
+    </div>`;
+  }).join('');
+
+  // レベルアップ履歴
+  const history=buildLvHistory();
+  document.getElementById('lv-history').innerHTML=history.length
+    ? history.map(e=>`<div class="lv-hist-row">
+        <div class="lv-hist-icon">${e.icon}</div>
+        <div class="lv-hist-text" style="color:${e.color};font-weight:500">${e.text}</div>
+        <div class="lv-hist-date">${e.date}</div>
+      </div>`).join('')
+    : '<div class="empty">まだ記録がありません</div>';
+
+  // レベルテーブル（語学ベースで表示）
+  const infoLang=getLvInfo('lang');
+  let tableHtml=`<thead><tr><th>Lv</th><th>称号</th><th>必要累計時間</th><th>前Lvからの追加</th></tr></thead><tbody>`;
+  for(let i=0;i<Math.min(15,LV_THRESHOLDS.length);i++){
+    const lv=i+1;
+    const thresh=LV_THRESHOLDS[i];
+    const prev=i>0?LV_THRESHOLDS[i-1]:0;
+    const diff=thresh-prev;
+    const isCurrent=lv===infoLang.baseLv;
+    tableHtml+=`<tr${isCurrent?' class="current-lv"':''}>
+      <td style="font-family:'Syne',sans-serif;font-weight:700">Lv${lv}${isCurrent?' ◀':''}</td>
+      <td>${lvTitle(lv)}</td>
+      <td>${thresh===0?'0h':fmt(thresh)}</td>
+      <td style="color:var(--mut)">${i===0?'—':'+'+fmt(diff)}</td>
+    </tr>`;
+  }
+  tableHtml+='</tbody>';
+  document.getElementById('lv-table').innerHTML=tableHtml;
+}
 
 let sb=null,recs=[],achs=[],cMode='all',aYear=new Date().getFullYear(),calD=new Date(),achFilter='all';
 
@@ -515,7 +767,7 @@ function fmt(m){if(m<60)return m+'分';const h=Math.floor(m/60),r=m%60;return r?
 function totalWithPast(cat){return recs.filter(r=>r.cat===cat).reduce((s,r)=>s+r.mins,0)+(cat==='lang'?PAST_MINS:0);}
 function grandTotal(){return recs.reduce((s,r)=>s+r.mins,0)+PAST_MINS;}
 
-function renderAll(){renderStats();renderBar();renderLog();renderAch();renderAna();renderCal();renderHM();}
+function renderAll(){renderStats();renderBar();renderLog();renderAch();renderLevel();renderAna();renderCal();renderHM();}
 
 function renderStats(){
   const now=new Date();
@@ -713,10 +965,11 @@ function go(id){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('on'));
   document.getElementById('p-'+id).classList.add('on');
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));
-  ['log','ach','ana','cal'].forEach((t,i)=>{if(t===id)document.querySelectorAll('.tab')[i].classList.add('on');});
+  ['log','ach','lv','ana','cal'].forEach((t,i)=>{if(t===id)document.querySelectorAll('.tab')[i].classList.add('on');});
   if(id==='ana')renderAna();
   if(id==='cal'){renderCal();renderHM();}
   if(id==='ach')renderAch();
+  if(id==='lv')renderLevel();
 }
 
 function toast(msg){
